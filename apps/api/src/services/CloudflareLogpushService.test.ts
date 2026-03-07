@@ -86,12 +86,8 @@ describe("CloudflareLogpushService", () => {
 
     expect(result.connector.serviceName).toBe("cloudflare/example.com");
     expect(result.connector.dataset).toBe("http_requests");
-    expect(result.setup.endpointUrl).toBe(
-      `https://ingest.example.com/v1/logpush/cloudflare/http_requests/${result.connector.id}`,
-    );
-    expect(result.setup.secret.startsWith("maple_cf_")).toBe(true);
-    expect(result.setup.destinationConf).toContain(
-      "header_X-Maple-Cloudflare-Secret=",
+    expect(result.setup.destinationConf).toStartWith(
+      `https://ingest.example.com/v1/logpush/cloudflare/http_requests/${result.connector.id}?secret=maple_cf_`,
     );
 
     const db = new Database(dbPath, { readonly: true });
@@ -107,11 +103,12 @@ describe("CloudflareLogpushService", () => {
       | undefined;
     db.close();
 
+    const secret = new URL(result.setup.destinationConf).searchParams.get("secret")!;
     expect(row).toBeDefined();
-    expect(row?.secret_ciphertext).not.toBe(result.setup.secret);
+    expect(row?.secret_ciphertext).not.toBe(secret);
     expect(row?.secret_hash).toBe(
       hashCloudflareLogpushSecret(
-        result.setup.secret,
+        secret,
         "maple-test-lookup-secret",
       ),
     );
@@ -157,7 +154,6 @@ describe("CloudflareLogpushService", () => {
       }).pipe(Effect.provide(makeLayer(url))),
     );
 
-    expect(result.setup.secret).toBe(result.created.setup.secret);
     expect(result.setup.destinationConf).toBe(
       result.created.setup.destinationConf,
     );
@@ -189,7 +185,7 @@ describe("CloudflareLogpushService", () => {
       }).pipe(Effect.provide(makeLayer(url))),
     );
 
-    expect(result.rotated.secret).not.toBe(result.created.setup.secret);
+    expect(result.rotated.destinationConf).not.toBe(result.created.setup.destinationConf);
     expect(result.connector.name).toBe(result.created.connector.name);
     expect(result.connector.zoneName).toBe(result.created.connector.zoneName);
   });
@@ -231,7 +227,7 @@ describe("CloudflareLogpushService", () => {
     expect(result.updated.zoneName).toBe("zone-a.example.com");
     expect(result.updated.serviceName).toBe("cloudflare/zone-a");
     expect(result.updated.enabled).toBe(false);
-    expect(result.setup.secret).toBe(result.created.setup.secret);
+    expect(result.setup.destinationConf).toBe(result.created.setup.destinationConf);
   });
 
   it("deletes a connector", async () => {

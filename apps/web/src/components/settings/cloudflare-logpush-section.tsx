@@ -89,9 +89,6 @@ interface CloudflareConnector {
 interface CloudflareSetup {
   connectorId: string;
   dataset: string;
-  endpointUrl: string;
-  headerName: string;
-  secret: string;
   destinationConf: string;
   recommendedOutputType: string;
   recommendedTimestampFormat: string;
@@ -609,55 +606,25 @@ export function CloudflareLogpushSection() {
             </div>
           ) : (
             <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-1">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <CopyableField
-                  label="Endpoint URL"
-                  value={setup.endpointUrl}
-                  copied={copiedField === "endpoint"}
-                  onCopy={() =>
-                    copyToClipboard(
-                      setup.endpointUrl,
-                      "endpoint",
-                      "Endpoint URL",
-                    )
-                  }
-                />
-                <CopyableField
-                  label="Header Name"
-                  value={setup.headerName}
-                  copied={copiedField === "header"}
-                  onCopy={() =>
-                    copyToClipboard(setup.headerName, "header", "Header name")
-                  }
-                />
-                <CopyableField
-                  label="Secret"
-                  value={setup.secret}
-                  copied={copiedField === "secret"}
-                  onCopy={() =>
-                    copyToClipboard(setup.secret, "secret", "Secret")
-                  }
-                />
-                <CopyableField
-                  label="destination_conf"
-                  value={setup.destinationConf}
-                  copied={copiedField === "destination"}
-                  onCopy={() =>
-                    copyToClipboard(
-                      setup.destinationConf,
-                      "destination",
-                      "destination_conf",
-                    )
-                  }
-                />
-              </div>
+              <CopyableField
+                label="destination_conf"
+                value={setup.destinationConf}
+                copied={copiedField === "destination"}
+                onCopy={() =>
+                  copyToClipboard(
+                    setup.destinationConf,
+                    "destination",
+                    "destination_conf",
+                  )
+                }
+              />
 
               <Separator />
 
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="rounded-md border p-3">
                   <p className="text-muted-foreground text-xs">Dataset</p>
-                  <p className="text-sm font-medium">HTTP requests</p>
+                  <p className="text-sm font-medium">Traces</p>
                 </div>
                 <div className="rounded-md border p-3">
                   <p className="text-muted-foreground text-xs">Output Type</p>

@@ -12,6 +12,7 @@ use autumn::AutumnTracker;
 use axum::body::Bytes;
 use axum::extract::DefaultBodyLimit;
 use axum::extract::Path;
+use axum::extract::Query;
 use axum::extract::State;
 use axum::http::header::{HeaderName, AUTHORIZATION, CONTENT_ENCODING, CONTENT_TYPE};
 use axum::http::{HeaderMap, Method, StatusCode};
@@ -36,7 +37,7 @@ use opentelemetry_proto::tonic::logs::v1::{LogRecord, ResourceLogs, ScopeLogs};
 use opentelemetry_proto::tonic::resource::v1::Resource;
 use prost::Message;
 use reqwest::Client;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Map as JsonMap, Value as JsonValue};
 use sha2::Sha256;
 use tower_http::cors::{Any, CorsLayer};
@@ -44,7 +45,6 @@ use tracing::{debug, error, info, warn, Span};
 
 const INGEST_SOURCE: &str = "maple-ingest-gateway";
 const CLOUDFLARE_LOGPUSH_SOURCE: &str = "cloudflare-logpush";
-const CLOUDFLARE_SECRET_HEADER: &str = "x-maple-cloudflare-secret";
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -388,7 +388,6 @@ async fn main() {
             CONTENT_TYPE,
             CONTENT_ENCODING,
             HeaderName::from_static("x-maple-ingest-key"),
-            HeaderName::from_static(CLOUDFLARE_SECRET_HEADER),
         ]);
 
     let app = Router::new()
@@ -459,13 +458,19 @@ async fn handle_metrics(
     handle_signal(state, headers, body, Signal::Metrics).await
 }
 
+#[derive(Deserialize)]
+struct CloudflareLogpushQuery {
+    secret: Option<String>,
+}
+
 async fn handle_cloudflare_logpush_http_requests(
     State(state): State<Arc<AppState>>,
     Path(connector_id): Path<String>,
+    Query(query): Query<CloudflareLogpushQuery>,
     headers: HeaderMap,
     body: Bytes,
 ) -> Response {
-    handle_cloudflare_logpush(state, connector_id, headers, body).await
+    handle_cloudflare_logpush(state, connector_id, query.secret, headers, body).await
 }
 
 async fn handle_signal(
@@ -524,6 +529,7 @@ async fn handle_signal(
 async fn handle_cloudflare_logpush(
     state: Arc<AppState>,
     connector_id: String,
+    secret: Option<String>,
     headers: HeaderMap,
     body: Bytes,
 ) -> Response {
@@ -543,7 +549,7 @@ async fn handle_cloudflare_logpush(
     );
     let _enter = span.enter();
 
-    let result = handle_cloudflare_logpush_inner(&state, &connector_id, &headers, body).await;
+    let result = handle_cloudflare_logpush_inner(&state, &connector_id, secret.as_deref(), &headers, body).await;
     let duration = start.elapsed();
 
     match result {
@@ -719,12 +725,11 @@ async fn handle_signal_inner(
 async fn handle_cloudflare_logpush_inner(
     state: &AppState,
     connector_id: &str,
+    secret: Option<&str>,
     headers: &HeaderMap,
     body: Bytes,
 ) -> Result<(Response, usize, String, bool), (ApiError, &'static str)> {
-    let secret = headers
-        .get(CLOUDFLARE_SECRET_HEADER)
-        .and_then(|value| value.to_str().ok())
+    let secret = secret
         .map(str::trim)
         .filter(|value| !value.is_empty())
         .ok_or_else(|| {

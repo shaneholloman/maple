@@ -33,9 +33,6 @@ export class CloudflareLogpushSetupResponse extends Schema.Class<CloudflareLogpu
 )({
   connectorId: Schema.String,
   dataset: Schema.String,
-  endpointUrl: Schema.String,
-  headerName: Schema.String,
-  secret: Schema.String,
   destinationConf: Schema.String,
   recommendedOutputType: Schema.String,
   recommendedTimestampFormat: Schema.String,

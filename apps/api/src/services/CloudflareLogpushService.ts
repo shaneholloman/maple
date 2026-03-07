@@ -33,7 +33,6 @@ interface EncryptedSecret {
 }
 
 const DATASET = "http_requests";
-const HEADER_NAME = "X-Maple-Cloudflare-Secret";
 const OUTPUT_TYPE = "ndjson";
 const TIMESTAMP_FORMAT = "unixnano";
 
@@ -257,14 +256,11 @@ export class CloudflareLogpushService extends Effect.Service<CloudflareLogpushSe
           );
 
           const endpointUrl = `${ingestPublicUrl}/v1/logpush/cloudflare/http_requests/${row.id}`;
-          const destinationConf = `${endpointUrl}?header_${encodeURIComponent(HEADER_NAME)}=${encodeURIComponent(secret)}`;
+          const destinationConf = `${endpointUrl}?secret=${encodeURIComponent(secret)}`;
 
           return new CloudflareLogpushSetupResponse({
             connectorId: row.id,
             dataset: DATASET,
-            endpointUrl,
-            headerName: HEADER_NAME,
-            secret,
             destinationConf,
             recommendedOutputType: OUTPUT_TYPE,
             recommendedTimestampFormat: TIMESTAMP_FORMAT,
