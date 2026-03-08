@@ -50,8 +50,13 @@ export const listTraces = defineEndpoint("list_traces", {
           groupUniqArray(ServiceName) AS services,
           argMin(
             if(
-              SpanName LIKE 'http.server %' AND SpanAttributes['http.route'] != '',
-              concat(replaceOne(SpanName, 'http.server ', ''), ' ', SpanAttributes['http.route']),
+              (SpanName LIKE 'http.server %' OR SpanName IN ('GET','POST','PUT','PATCH','DELETE','HEAD','OPTIONS'))
+              AND (SpanAttributes['http.route'] != '' OR SpanAttributes['url.path'] != ''),
+              concat(
+                if(SpanName LIKE 'http.server %', replaceOne(SpanName, 'http.server ', ''), SpanName),
+                ' ',
+                if(SpanAttributes['http.route'] != '', SpanAttributes['http.route'], SpanAttributes['url.path'])
+              ),
               SpanName
             ),
             if(ParentSpanId = '', 0, 1)
@@ -202,8 +207,13 @@ export const spanHierarchy = defineEndpoint("span_hierarchy", {
           SpanId AS spanId,
           ParentSpanId AS parentSpanId,
           if(
-            SpanName LIKE 'http.server %' AND SpanAttributes['http.route'] != '',
-            concat(replaceOne(SpanName, 'http.server ', ''), ' ', SpanAttributes['http.route']),
+            (SpanName LIKE 'http.server %' OR SpanName IN ('GET','POST','PUT','PATCH','DELETE','HEAD','OPTIONS'))
+            AND (SpanAttributes['http.route'] != '' OR SpanAttributes['url.path'] != ''),
+            concat(
+              if(SpanName LIKE 'http.server %', replaceOne(SpanName, 'http.server ', ''), SpanName),
+              ' ',
+              if(SpanAttributes['http.route'] != '', SpanAttributes['http.route'], SpanAttributes['url.path'])
+            ),
             SpanName
           ) AS spanName,
           ServiceName AS serviceName,
@@ -1141,8 +1151,13 @@ export const tracesFacets = defineEndpoint("traces_facets", {
           groupUniqArray(ServiceName) AS services,
           argMin(
             if(
-              SpanName LIKE 'http.server %' AND SpanAttributes['http.route'] != '',
-              concat(replaceOne(SpanName, 'http.server ', ''), ' ', SpanAttributes['http.route']),
+              (SpanName LIKE 'http.server %' OR SpanName IN ('GET','POST','PUT','PATCH','DELETE','HEAD','OPTIONS'))
+              AND (SpanAttributes['http.route'] != '' OR SpanAttributes['url.path'] != ''),
+              concat(
+                if(SpanName LIKE 'http.server %', replaceOne(SpanName, 'http.server ', ''), SpanName),
+                ' ',
+                if(SpanAttributes['http.route'] != '', SpanAttributes['http.route'], SpanAttributes['url.path'])
+              ),
               SpanName
             ),
             if(ParentSpanId = '', 0, 1)
@@ -1683,6 +1698,25 @@ export const serviceOverview = defineEndpoint("service_overview", {
   },
   nodes: [
     node({
+      name: "error_traces_by_service",
+      sql: `
+        SELECT ServiceName, TraceId
+        FROM traces
+        WHERE StatusCode = 'Error'
+          AND OrgId = {{String(org_id, "")}}
+        {% if defined(start_time) %}
+          AND Timestamp >= {{DateTime(start_time, "2023-01-01 00:00:00")}}
+        {% end %}
+        {% if defined(end_time) %}
+          AND Timestamp <= {{DateTime(end_time, "2099-12-31 23:59:59")}}
+        {% end %}
+        {% if defined(environments) %}
+          AND ResourceAttributes['deployment.environment'] IN splitByChar(',', {{String(environments, "")}})
+        {% end %}
+        GROUP BY ServiceName, TraceId
+      `,
+    }),
+    node({
       name: "service_overview_node",
       sql: `
         SELECT
@@ -1690,7 +1724,7 @@ export const serviceOverview = defineEndpoint("service_overview", {
           ResourceAttributes['deployment.environment'] AS environment,
           ResourceAttributes['deployment.commit_sha'] AS commitSha,
           count() AS throughput,
-          countIf(StatusCode = 'Error') AS errorCount,
+          countIf((ServiceName, TraceId) IN (SELECT ServiceName, TraceId FROM error_traces_by_service)) AS errorCount,
           count() AS spanCount,
           quantile(0.50)(Duration / 1000000) AS p50LatencyMs,
           quantile(0.95)(Duration / 1000000) AS p95LatencyMs,
@@ -1939,8 +1973,13 @@ export const errorDetailTraces = defineEndpoint("error_detail_traces", {
           groupUniqArray(t.ServiceName) AS services,
           argMin(
             if(
-              t.SpanName LIKE 'http.server %' AND t.SpanAttributes['http.route'] != '',
-              concat(replaceOne(t.SpanName, 'http.server ', ''), ' ', t.SpanAttributes['http.route']),
+              (t.SpanName LIKE 'http.server %' OR t.SpanName IN ('GET','POST','PUT','PATCH','DELETE','HEAD','OPTIONS'))
+              AND (t.SpanAttributes['http.route'] != '' OR t.SpanAttributes['url.path'] != ''),
+              concat(
+                if(t.SpanName LIKE 'http.server %', replaceOne(t.SpanName, 'http.server ', ''), t.SpanName),
+                ' ',
+                if(t.SpanAttributes['http.route'] != '', t.SpanAttributes['http.route'], t.SpanAttributes['url.path'])
+              ),
               t.SpanName
             ),
             if(t.ParentSpanId = '', 0, 1)
@@ -2260,7 +2299,19 @@ export const customTracesTimeseries = defineEndpoint("custom_traces_timeseries",
           quantile(0.5)(Duration) / 1000000 AS p50Duration,
           quantile(0.95)(Duration) / 1000000 AS p95Duration,
           quantile(0.99)(Duration) / 1000000 AS p99Duration,
-          if(count() > 0, countIf(StatusCode = 'Error') * 100.0 / count(), 0) AS errorRate
+          {% if defined(root_only) %}
+            if(count() > 0,
+              countIf(TraceId IN (
+                SELECT TraceId FROM traces
+                WHERE StatusCode = 'Error'
+                  AND OrgId = {{String(org_id, "")}}
+                  AND Timestamp >= {{DateTime(start_time)}}
+                  AND Timestamp <= {{DateTime(end_time)}}
+                  {% if defined(service_name) %}AND ServiceName = {{String(service_name)}}{% end %}
+              )) * 100.0 / count(), 0) AS errorRate
+          {% else %}
+            if(count() > 0, countIf(StatusCode = 'Error') * 100.0 / count(), 0) AS errorRate
+          {% end %}
         FROM traces
         WHERE Timestamp >= {{DateTime(start_time)}}
           AND OrgId = {{String(org_id, "")}}
@@ -2348,7 +2399,19 @@ export const customTracesBreakdown = defineEndpoint("custom_traces_breakdown", {
           quantile(0.5)(Duration) / 1000000 AS p50Duration,
           quantile(0.95)(Duration) / 1000000 AS p95Duration,
           quantile(0.99)(Duration) / 1000000 AS p99Duration,
-          if(count() > 0, countIf(StatusCode = 'Error') * 100.0 / count(), 0) AS errorRate
+          {% if defined(root_only) %}
+            if(count() > 0,
+              countIf(TraceId IN (
+                SELECT TraceId FROM traces
+                WHERE StatusCode = 'Error'
+                  AND OrgId = {{String(org_id, "")}}
+                  AND Timestamp >= {{DateTime(start_time)}}
+                  AND Timestamp <= {{DateTime(end_time)}}
+                  {% if defined(service_name) %}AND ServiceName = {{String(service_name)}}{% end %}
+              )) * 100.0 / count(), 0) AS errorRate
+          {% else %}
+            if(count() > 0, countIf(StatusCode = 'Error') * 100.0 / count(), 0) AS errorRate
+          {% end %}
         FROM traces
         WHERE Timestamp >= {{DateTime(start_time)}}
           AND OrgId = {{String(org_id, "")}}
