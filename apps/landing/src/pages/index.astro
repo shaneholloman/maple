@@ -15,12 +15,12 @@ import BottomCTA from "../components/BottomCTA.astro";
 import Footer from "../components/Footer.astro";
 import SeoHead from "../components/SeoHead.astro";
 
-const pageTitle = "Maple — OpenTelemetry Observability";
+const pageTitle = "Open Source Observability for Traces, Logs & Metrics — Maple";
 const pageDescription = "Open-source observability platform built on OpenTelemetry. Collect, visualize, and analyze distributed traces, logs, and metrics from your services with AI-powered diagnostics.";
 ---
 
 <Layout title={pageTitle} description={pageDescription}>
-    <SeoHead title={pageTitle} description={pageDescription} type="SoftwareApplication" />
+    <SeoHead title={pageTitle} description={pageDescription} type="SoftwareApplication" includeOrganization={true} />
     <Nav />
     <Hero />
     <TrustBar />

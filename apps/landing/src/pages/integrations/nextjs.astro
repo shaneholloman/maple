@@ -8,16 +8,31 @@ import RelatedIntegrations from "../../components/RelatedIntegrations.astro";
 import BottomCTA from "../../components/BottomCTA.astro";
 import Footer from "../../components/Footer.astro";
 import SeoHead from "../../components/SeoHead.astro";
+import Breadcrumb from "../../components/Breadcrumb.astro";
 import { integrations } from "../../lib/integrations";
 
 const integration = integrations.nextjs;
 const pageTitle = "Next.js Observability with OpenTelemetry — Maple";
 const pageDescription = "Add distributed tracing, logging, and metrics to your Next.js app in minutes. Built on OpenTelemetry with zero vendor lock-in.";
+
+const howToJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "How to add OpenTelemetry observability to Next.js",
+    "description": pageDescription,
+    "step": integration.steps.map((step, index) => ({
+        "@type": "HowToStep",
+        "position": index + 1,
+        "name": step.title,
+        "text": step.code,
+    })),
+};
 ---
 
-<Layout title={pageTitle} description={pageDescription}>
+<Layout title={pageTitle} description={pageDescription} ogType="article">
     <SeoHead title={pageTitle} description={pageDescription} />
     <Nav />
+    <Breadcrumb items={[{ label: "Home", href: "/" }, { label: "Integrations" }, { label: "Next.js" }]} />
     <FeatureHero
         label="Next.js"
         title="Next.js observability with OpenTelemetry"
@@ -92,4 +107,5 @@ const pageDescription = "Add distributed tracing, logging, and metrics to your N
     <RelatedIntegrations current="nextjs" />
     <BottomCTA />
     <Footer />
+    <script type="application/ld+json" set:html={JSON.stringify(howToJsonLd)} />
 </Layout>

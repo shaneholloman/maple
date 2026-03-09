@@ -5,12 +5,14 @@ interface Props {
     title?: string;
     description?: string;
     image?: string;
+    ogType?: "website" | "article";
 }
 
 const {
-    title = "Maple — OpenTelemetry Observability",
+    title = "Open Source Observability for Traces, Logs & Metrics — Maple",
     description = "Open-source observability platform for traces, logs, and metrics. Built on OpenTelemetry.",
     image = "/og-image.png",
+    ogType = "website",
 } = Astro.props;
 
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site).toString();
@@ -34,7 +36,7 @@ const absoluteImage = image.startsWith("http")
         <link rel="canonical" href={canonicalUrl} />
         <link rel="dns-prefetch" href="https://cdn.brandfetch.io" />
         <link rel="preconnect" href="https://cdn.brandfetch.io" crossorigin />
-        <meta property="og:type" content="website" />
+        <meta property="og:type" content={ogType} />
         <meta property="og:site_name" content="Maple" />
         <meta property="og:locale" content="en_US" />
         <meta property="og:title" content={title} />
