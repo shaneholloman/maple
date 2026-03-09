@@ -159,12 +159,12 @@ with tracer.start_as_current_span("hello-maple"):
       },
       {
         title: "Configure tracing",
-        code: `// tracing.js — run with: node --require ./tracing.js app.js
-const { NodeSDK } = require("@opentelemetry/sdk-node");
-const { getNodeAutoInstrumentations } = require("@opentelemetry/auto-instrumentations-node");
-const { OTLPTraceExporter } = require("@opentelemetry/exporter-trace-otlp-http");
-const { OTLPLogExporter } = require("@opentelemetry/exporter-logs-otlp-http");
-const { SimpleLogRecordProcessor } = require("@opentelemetry/sdk-logs");
+        code: `// tracing.ts — run with: node --import ./tracing.js app.js
+import { NodeSDK } from "@opentelemetry/sdk-node";
+import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
+import { SimpleLogRecordProcessor } from "@opentelemetry/sdk-logs";
 
 const sdk = new NodeSDK({
   traceExporter: new OTLPTraceExporter({
@@ -183,7 +183,7 @@ const sdk = new NodeSDK({
 });
 
 sdk.start();`,
-        language: "javascript",
+        language: "typescript",
       },
     ],
     signals: [
