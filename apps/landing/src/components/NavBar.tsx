@@ -42,7 +42,7 @@ function NavBarInner({ locale = "en" }: { locale?: string }) {
   ]
 
   return (
-    <div className="flex items-center justify-between h-full">
+    <div className="flex items-center justify-between h-full w-full">
       {/* Left group: Logo + Navigation */}
       <div className="flex items-center gap-1">
         <a href={l("/")} className="flex items-center gap-3 mr-2">
