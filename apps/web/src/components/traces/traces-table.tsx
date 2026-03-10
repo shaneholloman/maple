@@ -1,7 +1,6 @@
-import { Result, useAtomValue } from "@effect-atom/atom-react"
+import { Result } from "@effect-atom/atom-react"
 import { Link, useNavigate } from "@tanstack/react-router"
 
-import { useEffectiveTimeRange } from "@/hooks/use-effective-time-range"
 import {
   Table,
   TableBody,
@@ -18,6 +17,8 @@ import type { TracesSearchParams } from "@/routes/traces"
 import { useTimezonePreference } from "@/hooks/use-timezone-preference"
 import { formatTimestampInTimezone } from "@/lib/timezone-format"
 import { HttpSpanLabel } from "./http-span-label"
+import { useRetainedRefreshableResultValue } from "@/hooks/use-retained-refreshable-result-value"
+import { useTableRefreshTimeRange } from "@/hooks/use-table-refresh-time-range"
 
 function formatDuration(ms: number): string {
   if (ms < 1) {
@@ -114,12 +115,14 @@ function LoadingState() {
 export function TracesTable({ filters }: TracesTableProps) {
   const navigate = useNavigate()
   const { effectiveTimezone } = useTimezonePreference()
-  const { startTime: effectiveStartTime, endTime: effectiveEndTime } = useEffectiveTimeRange(
-    filters?.startTime,
-    filters?.endTime,
-  )
+  const refreshedRange = useTableRefreshTimeRange({
+    startTime: filters?.startTime,
+    endTime: filters?.endTime,
+    timePreset: filters?.timePreset,
+    defaultRange: "12h",
+  })
 
-  const tracesResult = useAtomValue(
+  const tracesResult = useRetainedRefreshableResultValue(
     listTracesResultAtom({
       data: {
         service: filters?.services?.[0],
@@ -134,8 +137,8 @@ export function TracesTable({ filters }: TracesTableProps) {
         attributeValue: filters?.attributeValue,
         resourceAttributeKey: filters?.resourceAttributeKey,
         resourceAttributeValue: filters?.resourceAttributeValue,
-        startTime: effectiveStartTime,
-        endTime: effectiveEndTime,
+        startTime: refreshedRange.startTime,
+        endTime: refreshedRange.endTime,
         rootOnly: filters?.rootOnly,
         serviceMatchMode: filters?.serviceMatchMode,
         spanNameMatchMode: filters?.spanNameMatchMode,

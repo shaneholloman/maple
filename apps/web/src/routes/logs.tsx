@@ -5,7 +5,9 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { LogsTable } from "@/components/logs/logs-table"
 import { LogsVolumeChart } from "@/components/logs/logs-volume-chart"
 import { LogsFilterSidebar } from "@/components/logs/logs-filter-sidebar"
-import { TimeRangePicker } from "@/components/time-range-picker"
+import { applyTimeRangeSearch } from "@/components/time-range-picker/search"
+import { PageRefreshProvider } from "@/components/time-range-picker/page-refresh-context"
+import { TimeRangeHeaderControls } from "@/components/time-range-picker/time-range-header-controls"
 
 const logsSearchSchema = Schema.Struct({
   services: Schema.optional(Schema.mutable(Schema.Array(Schema.String))),
@@ -23,40 +25,42 @@ export const Route = createFileRoute("/logs")({
   validateSearch: Schema.standardSchemaV1(logsSearchSchema),
 })
 
-function LogsPage() {
+export function LogsPage() {
   const search = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
 
-  const handleTimeChange = ({
-    startTime,
-    endTime,
-    presetValue,
-  }: {
-    startTime?: string
-    endTime?: string
-    presetValue?: string
-  }) => {
+  const handleTimeChange = (
+    range: {
+      startTime?: string
+      endTime?: string
+      presetValue?: string
+    },
+    options?: { replace?: boolean },
+  ) => {
     navigate({
-      search: (prev) => ({ ...prev, startTime, endTime, timePreset: presetValue }),
+      replace: options?.replace,
+      search: (prev) => applyTimeRangeSearch(prev, range),
     })
   }
 
   return (
-    <DashboardLayout
-      breadcrumbs={[{ label: "Logs" }]}
-      title="Logs"
-      filterSidebar={<LogsFilterSidebar />}
-      headerActions={
-        <TimeRangePicker
-          startTime={search.startTime}
-          endTime={search.endTime}
-          presetValue={search.timePreset ?? "12h"}
-          onChange={handleTimeChange}
-        />
-      }
-      stickyContent={<LogsVolumeChart filters={search} />}
-    >
-      <LogsTable filters={search} />
-    </DashboardLayout>
+    <PageRefreshProvider timePreset={search.timePreset ?? "12h"}>
+      <DashboardLayout
+        breadcrumbs={[{ label: "Logs" }]}
+        title="Logs"
+        filterSidebar={<LogsFilterSidebar />}
+        headerActions={
+          <TimeRangeHeaderControls
+            startTime={search.startTime}
+            endTime={search.endTime}
+            presetValue={search.timePreset ?? "12h"}
+            onTimeChange={handleTimeChange}
+          />
+        }
+        stickyContent={<LogsVolumeChart filters={search} />}
+      >
+        <LogsTable filters={search} />
+      </DashboardLayout>
+    </PageRefreshProvider>
   )
 }

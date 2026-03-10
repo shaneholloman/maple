@@ -1,10 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { Result, useAtomValue } from "@effect-atom/atom-react"
+import { Result } from "@effect-atom/atom-react"
 import { Schema } from "effect"
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { TimeRangePicker } from "@/components/time-range-picker"
 import { useEffectiveTimeRange } from "@/hooks/use-effective-time-range"
+import { useRefreshableAtomValue } from "@/hooks/use-refreshable-atom-value"
 import { MetricsGrid } from "@/components/dashboard/metrics-grid"
 import type {
   ChartLegendMode,
@@ -14,6 +14,12 @@ import {
   getCustomChartServiceDetailResultAtom,
   getServiceApdexTimeSeriesResultAtom,
 } from "@/lib/services/atoms/tinybird-query-atoms"
+import { applyTimeRangeSearch } from "@/components/time-range-picker/search"
+import {
+  PageRefreshProvider,
+  type RelativeRefreshRange,
+} from "@/components/time-range-picker/page-refresh-context"
+import { TimeRangeHeaderControls } from "@/components/time-range-picker/time-range-header-controls"
 
 const serviceDetailSearchSchema = Schema.Struct({
   startTime: Schema.optional(Schema.String),
@@ -50,26 +56,21 @@ function ServiceDetailPage() {
   const { startTime: effectiveStartTime, endTime: effectiveEndTime } =
     useEffectiveTimeRange(search.startTime, search.endTime)
 
-  const handleTimeChange = ({
-    startTime,
-    endTime,
-    presetValue,
-  }: {
-    startTime?: string
-    endTime?: string
-    presetValue?: string
-  }) => {
+  const handleTimeChange = (
+    range: {
+      startTime?: string
+      endTime?: string
+      presetValue?: string
+    },
+    options?: { replace?: boolean },
+  ) => {
     navigate({
-      search: (prev: Record<string, unknown>) => ({
-        ...prev,
-        startTime,
-        endTime,
-        timePreset: presetValue,
-      }),
+      replace: options?.replace,
+      search: (prev: Record<string, unknown>) => applyTimeRangeSearch(prev, range),
     })
   }
 
-  const detailResult = useAtomValue(
+  const detailResult = useRefreshableAtomValue(
     getCustomChartServiceDetailResultAtom({
       data: {
         serviceName,
@@ -79,7 +80,7 @@ function ServiceDetailPage() {
     }),
   )
 
-  const apdexResult = useAtomValue(
+  const apdexResult = useRefreshableAtomValue(
     getServiceApdexTimeSeriesResultAtom({
       data: {
         serviceName,
@@ -114,22 +115,28 @@ function ServiceDetailPage() {
   }))
 
   return (
-    <DashboardLayout
-      breadcrumbs={[
-        { label: "Services", href: "/services" },
-        { label: serviceName },
-      ]}
-      title={serviceName}
-      headerActions={
-        <TimeRangePicker
-          startTime={search.startTime}
-          endTime={search.endTime}
-          presetValue={search.timePreset ?? "12h"}
-          onChange={handleTimeChange}
-        />
-      }
+    <PageRefreshProvider
+      timePreset={search.timePreset ?? "12h"}
+      onRelativeRangeRefresh={(range: RelativeRefreshRange) =>
+        handleTimeChange(range, { replace: true })}
     >
-      <MetricsGrid items={metrics} />
-    </DashboardLayout>
+      <DashboardLayout
+        breadcrumbs={[
+          { label: "Services", href: "/services" },
+          { label: serviceName },
+        ]}
+        title={serviceName}
+        headerActions={
+          <TimeRangeHeaderControls
+            startTime={search.startTime}
+            endTime={search.endTime}
+            presetValue={search.timePreset ?? "12h"}
+            onTimeChange={handleTimeChange}
+          />
+        }
+      >
+        <MetricsGrid items={metrics} />
+      </DashboardLayout>
+    </PageRefreshProvider>
   )
 }

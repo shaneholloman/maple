@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { Result, useAtomValue } from "@effect-atom/atom-react"
+import { Result } from "@effect-atom/atom-react"
 import { Schema } from "effect"
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@maple/ui/components/ui/select"
 import { useEffectiveTimeRange } from "@/hooks/use-effective-time-range"
+import { useRefreshableAtomValue } from "@/hooks/use-refreshable-atom-value"
 import { ServiceUsageCards } from "@/components/dashboard/service-usage-cards"
 import { MetricsGrid } from "@/components/dashboard/metrics-grid"
 import type {
@@ -27,6 +28,7 @@ import {
 import type { CustomChartTimeSeriesResponse } from "@/api/tinybird/custom-charts"
 import type { ServiceDetailTimeSeriesPoint } from "@/api/tinybird/services"
 import { disabledResultAtom } from "@/lib/services/atoms/disabled-result-atom"
+import { applyTimeRangeSearch } from "@/components/time-range-picker/search"
 
 const dashboardSearchSchema = Schema.Struct({
   startTime: Schema.optional(Schema.String),
@@ -65,22 +67,17 @@ function DashboardPage() {
   const { startTime: effectiveStartTime, endTime: effectiveEndTime } =
     useEffectiveTimeRange(search.startTime, search.endTime, "24h")
 
-  const handleTimeChange = ({
-    startTime,
-    endTime,
-    presetValue,
-  }: {
-    startTime?: string
-    endTime?: string
-    presetValue?: string
-  }) => {
+  const handleTimeChange = (
+    range: {
+      startTime?: string
+      endTime?: string
+      presetValue?: string
+    },
+    options?: { replace?: boolean },
+  ) => {
     navigate({
-      search: (prev: Record<string, unknown>) => ({
-        ...prev,
-        startTime,
-        endTime,
-        timePreset: presetValue,
-      }),
+      replace: options?.replace,
+      search: (prev: Record<string, unknown>) => applyTimeRangeSearch(prev, range),
     })
   }
 
@@ -93,7 +90,7 @@ function DashboardPage() {
     })
   }
 
-  const facetsResult = useAtomValue(
+  const facetsResult = useRefreshableAtomValue(
     getServicesFacetsResultAtom({
       data: {
         startTime: effectiveStartTime,
@@ -121,7 +118,7 @@ function DashboardPage() {
   // when environmentFilter changes from undefined → ["production"]
   const facetsReady = !Result.isInitial(facetsResult)
 
-  const overviewResult = useAtomValue(
+  const overviewResult = useRefreshableAtomValue(
     facetsReady
       ? getOverviewTimeSeriesResultAtom({
           data: {
@@ -134,7 +131,7 @@ function DashboardPage() {
       : disabledResultAtom<{ data: ServiceDetailTimeSeriesPoint[] }, any>(),
   )
 
-  const logVolumeResult = useAtomValue(
+  const logVolumeResult = useRefreshableAtomValue(
     facetsReady
       ? getCustomChartTimeSeriesResultAtom({
           data: {

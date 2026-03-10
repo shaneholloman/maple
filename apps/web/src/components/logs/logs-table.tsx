@@ -1,4 +1,4 @@
-import { Result, useAtomValue } from "@effect-atom/atom-react"
+import { Result } from "@effect-atom/atom-react"
 import { useState } from "react"
 
 import {
@@ -11,13 +11,14 @@ import {
 } from "@maple/ui/components/ui/table"
 import { Skeleton } from "@maple/ui/components/ui/skeleton"
 import { type Log } from "@/api/tinybird/logs"
-import { useEffectiveTimeRange } from "@/hooks/use-effective-time-range"
 import { SeverityBadge } from "./severity-badge"
 import { LogDetailSheet } from "./log-detail-sheet"
 import type { LogsSearchParams } from "@/routes/logs"
 import { listLogsResultAtom } from "@/lib/services/atoms/tinybird-query-atoms"
 import { useTimezonePreference } from "@/hooks/use-timezone-preference"
 import { formatTimestampInTimezone } from "@/lib/timezone-format"
+import { useRetainedRefreshableResultValue } from "@/hooks/use-retained-refreshable-result-value"
+import { useTableRefreshTimeRange } from "@/hooks/use-table-refresh-time-range"
 
 function truncateBody(body: string, maxLength = 100): string {
   if (body.length <= maxLength) return body
@@ -63,9 +64,14 @@ export function LogsTable({ filters }: LogsTableProps) {
   const { effectiveTimezone } = useTimezonePreference()
 
   const { startTime: effectiveStartTime, endTime: effectiveEndTime } =
-    useEffectiveTimeRange(filters?.startTime, filters?.endTime)
+    useTableRefreshTimeRange({
+      startTime: filters?.startTime,
+      endTime: filters?.endTime,
+      timePreset: filters?.timePreset,
+      defaultRange: "12h",
+    })
 
-  const logsResult = useAtomValue(
+  const logsResult = useRetainedRefreshableResultValue(
     listLogsResultAtom({
       data: {
         startTime: effectiveStartTime,

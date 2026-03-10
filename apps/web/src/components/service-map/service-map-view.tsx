@@ -12,7 +12,7 @@ import {
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 
-import { Result, useAtomValue } from "@effect-atom/atom-react"
+import { Result } from "@effect-atom/atom-react"
 
 import { getServiceLegendColor } from "@maple/ui/colors"
 import { getServiceMapResultAtom, getServiceOverviewResultAtom } from "@/lib/services/atoms/tinybird-query-atoms"
@@ -27,6 +27,7 @@ import {
   type ServiceNodeData,
   type ServiceEdgeData,
 } from "./service-map-utils"
+import { useRefreshableAtomValue } from "@/hooks/use-refreshable-atom-value"
 
 const nodeTypes = {
   serviceNode: ServiceMapNode,
@@ -184,8 +185,8 @@ export function ServiceMapView({ startTime, endTime }: ServiceMapViewProps) {
     [startTime, endTime],
   )
 
-  const mapResult = useAtomValue(getServiceMapResultAtom(mapInput))
-  const overviewResult = useAtomValue(getServiceOverviewResultAtom(overviewInput))
+  const mapResult = useRefreshableAtomValue(getServiceMapResultAtom(mapInput))
+  const overviewResult = useRefreshableAtomValue(getServiceOverviewResultAtom(overviewInput))
 
   // Both need to be loaded for the view
   return Result.builder(mapResult)

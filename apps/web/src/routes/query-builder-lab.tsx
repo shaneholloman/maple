@@ -3,8 +3,13 @@ import { Schema } from "effect"
 
 import { QueryBuilderLab } from "@/components/query-builder/query-builder-lab"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { TimeRangePicker } from "@/components/time-range-picker"
 import { useEffectiveTimeRange } from "@/hooks/use-effective-time-range"
+import { applyTimeRangeSearch } from "@/components/time-range-picker/search"
+import {
+  PageRefreshProvider,
+  type RelativeRefreshRange,
+} from "@/components/time-range-picker/page-refresh-context"
+import { TimeRangeHeaderControls } from "@/components/time-range-picker/time-range-header-controls"
 
 const queryBuilderLabSearchSchema = Schema.Struct({
   startTime: Schema.optional(Schema.String),
@@ -24,46 +29,49 @@ function QueryBuilderLabPage() {
   const { startTime: effectiveStartTime, endTime: effectiveEndTime } =
     useEffectiveTimeRange(search.startTime, search.endTime, "1h")
 
-  const handleTimeChange = ({
-    startTime,
-    endTime,
-    presetValue,
-  }: {
-    startTime?: string
-    endTime?: string
-    presetValue?: string
-  }) => {
+  const handleTimeChange = (
+    range: {
+      startTime?: string
+      endTime?: string
+      presetValue?: string
+    },
+    options?: { replace?: boolean },
+  ) => {
     navigate({
+      replace: options?.replace,
       search: (previous: Record<string, unknown>) => ({
-        ...previous,
-        startTime,
-        endTime,
-        timePreset: presetValue,
+        ...applyTimeRangeSearch(previous, range),
       }),
     })
   }
 
   return (
-    <DashboardLayout
-      breadcrumbs={[
-        { label: "Overview", href: "/" },
-        { label: "Query Builder Lab" },
-      ]}
-      title="Query Builder Lab"
-      description="MVP Query builder"
-      headerActions={
-        <TimeRangePicker
-          startTime={search.startTime}
-          endTime={search.endTime}
-          presetValue={search.timePreset ?? "1h"}
-          onChange={handleTimeChange}
-        />
-      }
+    <PageRefreshProvider
+      timePreset={search.timePreset ?? "1h"}
+      onRelativeRangeRefresh={(range: RelativeRefreshRange) =>
+        handleTimeChange(range, { replace: true })}
     >
-      <QueryBuilderLab
-        startTime={effectiveStartTime}
-        endTime={effectiveEndTime}
-      />
-    </DashboardLayout>
+      <DashboardLayout
+        breadcrumbs={[
+          { label: "Overview", href: "/" },
+          { label: "Query Builder Lab" },
+        ]}
+        title="Query Builder Lab"
+        description="MVP Query builder"
+        headerActions={
+          <TimeRangeHeaderControls
+            startTime={search.startTime}
+            endTime={search.endTime}
+            presetValue={search.timePreset ?? "1h"}
+            onTimeChange={handleTimeChange}
+          />
+        }
+      >
+        <QueryBuilderLab
+          startTime={effectiveStartTime}
+          endTime={effectiveEndTime}
+        />
+      </DashboardLayout>
+    </PageRefreshProvider>
   )
 }

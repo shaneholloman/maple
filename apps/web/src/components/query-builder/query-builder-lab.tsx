@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Result, useAtomValue } from "@effect-atom/atom-react"
+import { Result } from "@effect-atom/atom-react"
 import { PulseIcon, XmarkIcon, PlusIcon, MagnifierIcon } from "@/components/icons"
 
 import { Badge } from "@maple/ui/components/ui/badge"
@@ -61,6 +61,7 @@ import {
   type QueryBuilderMetricType,
   type QueryBuilderQueryDraft,
 } from "@/lib/query-builder/model"
+import { useRefreshableAtomValue } from "@/hooks/use-refreshable-atom-value"
 
 type DataSource = QueryBuilderDataSource
 type QueryDraft = QueryBuilderQueryDraft
@@ -331,7 +332,7 @@ function QueryBuilderAtomResults({
 }: {
   input: QueryBuilderTimeseriesInput
 }) {
-  const result = useAtomValue(
+  const result = useRefreshableAtomValue(
     getQueryBuilderTimeseriesResultAtom({ data: input }),
   )
 
@@ -437,7 +438,7 @@ export function QueryBuilderLab({
     [queries],
   )
 
-  const metricsResult = useAtomValue(
+  const metricsResult = useRefreshableAtomValue(
     listMetricsResultAtom({
       data: {
         limit: 300,
@@ -445,7 +446,7 @@ export function QueryBuilderLab({
     }),
   )
 
-  const tracesFacetsResult = useAtomValue(
+  const tracesFacetsResult = useRefreshableAtomValue(
     getTracesFacetsResultAtom({
       data: {
         startTime,
@@ -454,7 +455,7 @@ export function QueryBuilderLab({
     }),
   )
 
-  const logsFacetsResult = useAtomValue(
+  const logsFacetsResult = useRefreshableAtomValue(
     getLogsFacetsResultAtom({
       data: {
         startTime,
@@ -463,7 +464,7 @@ export function QueryBuilderLab({
     }),
   )
 
-  const spanAttributeKeysResult = useAtomValue(
+  const spanAttributeKeysResult = useRefreshableAtomValue(
     getSpanAttributeKeysResultAtom({
       data: {
         startTime,
@@ -475,7 +476,7 @@ export function QueryBuilderLab({
   const [activeAttributeKey, setActiveAttributeKey] = React.useState<string | null>(null)
   const [activeResourceAttributeKey, setActiveResourceAttributeKey] = React.useState<string | null>(null)
 
-  const spanAttributeValuesResult = useAtomValue(
+  const spanAttributeValuesResult = useRefreshableAtomValue(
     getSpanAttributeValuesResultAtom({
       data: {
         startTime,
@@ -485,7 +486,7 @@ export function QueryBuilderLab({
     }),
   )
 
-  const resourceAttributeKeysResult = useAtomValue(
+  const resourceAttributeKeysResult = useRefreshableAtomValue(
     getResourceAttributeKeysResultAtom({
       data: {
         startTime,
@@ -494,7 +495,7 @@ export function QueryBuilderLab({
     }),
   )
 
-  const resourceAttributeValuesResult = useAtomValue(
+  const resourceAttributeValuesResult = useRefreshableAtomValue(
     getResourceAttributeValuesResultAtom({
       data: {
         startTime,

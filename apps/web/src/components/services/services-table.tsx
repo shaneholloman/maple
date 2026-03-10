@@ -1,7 +1,8 @@
-import { Result, useAtomValue } from "@effect-atom/atom-react"
+import { Result } from "@effect-atom/atom-react"
 import { Link, useNavigate } from "@tanstack/react-router"
 
 import { useEffectiveTimeRange } from "@/hooks/use-effective-time-range"
+import { useRefreshableAtomValue } from "@/hooks/use-refreshable-atom-value"
 import {
   Table,
   TableBody,
@@ -197,7 +198,7 @@ export function ServicesTable({ filters }: ServicesTableProps) {
   const { startTime: effectiveStartTime, endTime: effectiveEndTime } =
     useEffectiveTimeRange(filters?.startTime, filters?.endTime)
 
-  const overviewResult = useAtomValue(
+  const overviewResult = useRefreshableAtomValue(
     getServiceOverviewResultAtom({
       data: {
         startTime: effectiveStartTime,
@@ -208,7 +209,7 @@ export function ServicesTable({ filters }: ServicesTableProps) {
     }),
   )
 
-  const timeSeriesResult = useAtomValue(
+  const timeSeriesResult = useRefreshableAtomValue(
     getCustomChartServiceSparklinesResultAtom({
       data: {
         startTime: effectiveStartTime,
@@ -269,9 +270,10 @@ export function ServicesTable({ filters }: ServicesTableProps) {
                           to: "/services/$serviceName",
                           params: { serviceName: service.serviceName },
                           search: {
-                            startTime: filters?.startTime,
-                            endTime: filters?.endTime,
-                          },
+                                startTime: filters?.startTime,
+                                endTime: filters?.endTime,
+                                timePreset: filters?.timePreset,
+                              },
                         })}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ") {
@@ -282,6 +284,7 @@ export function ServicesTable({ filters }: ServicesTableProps) {
                               search: {
                                 startTime: filters?.startTime,
                                 endTime: filters?.endTime,
+                                timePreset: filters?.timePreset,
                               },
                             })
                           }
@@ -294,6 +297,7 @@ export function ServicesTable({ filters }: ServicesTableProps) {
                             search={{
                               startTime: filters?.startTime,
                               endTime: filters?.endTime,
+                              timePreset: filters?.timePreset,
                             }}
                             className="font-medium text-primary hover:underline"
                             onClick={(e) => e.stopPropagation()}

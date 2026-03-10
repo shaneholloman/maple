@@ -1,4 +1,4 @@
-import { Result, useAtomValue } from "@effect-atom/atom-react"
+import { Result } from "@effect-atom/atom-react"
 import {
   FileIcon,
   PulseIcon,
@@ -9,6 +9,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@maple/ui/components/ui/card"
 import { Skeleton } from "@maple/ui/components/ui/skeleton"
 import { getServiceUsageResultAtom } from "@/lib/services/atoms/tinybird-query-atoms"
+import { useRefreshableAtomValue } from "@/hooks/use-refreshable-atom-value"
 
 function formatNumber(num: number): string {
   if (num >= 1_000_000) {
@@ -66,7 +67,7 @@ interface ServiceUsageCardsProps {
 }
 
 export function ServiceUsageCards({ startTime, endTime }: ServiceUsageCardsProps = {}) {
-  const responseResult = useAtomValue(
+  const responseResult = useRefreshableAtomValue(
     getServiceUsageResultAtom({ data: { startTime, endTime } }),
   )
 

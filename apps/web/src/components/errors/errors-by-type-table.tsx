@@ -1,4 +1,4 @@
-import { Result, useAtomValue } from "@effect-atom/atom-react"
+import { Result } from "@effect-atom/atom-react"
 import { Fragment, useState } from "react"
 import { Link } from "@tanstack/react-router"
 import { formatDistanceToNow, format } from "date-fns"
@@ -21,6 +21,7 @@ import {
   getErrorsByTypeResultAtom,
 } from "@/lib/services/atoms/tinybird-query-atoms"
 import { HttpSpanLabel } from "@/components/traces/http-span-label"
+import { useRefreshableAtomValue } from "@/hooks/use-refreshable-atom-value"
 
 function formatNumber(num: number): string {
   if (num >= 1_000_000) {
@@ -46,7 +47,7 @@ interface ErrorsByTypeTableProps {
 }
 
 function ErrorDetailPanel({ errorRow, filters }: { errorRow: ErrorByType; filters: GetErrorsByTypeInput }) {
-  const detailResult = useAtomValue(
+  const detailResult = useRefreshableAtomValue(
     getErrorDetailTracesResultAtom({
       data: {
         errorType: errorRow.errorType,
@@ -200,7 +201,7 @@ function LoadingState() {
 export function ErrorsByTypeTable({ filters }: ErrorsByTypeTableProps) {
   const [expandedError, setExpandedError] = useState<string | null>(null)
 
-  const errorsResult = useAtomValue(getErrorsByTypeResultAtom({ data: filters }))
+  const errorsResult = useRefreshableAtomValue(getErrorsByTypeResultAtom({ data: filters }))
 
   return Result.builder(errorsResult)
     .onInitial(() => <LoadingState />)

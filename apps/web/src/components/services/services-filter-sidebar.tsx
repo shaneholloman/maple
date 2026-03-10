@@ -1,7 +1,8 @@
-import { Result, useAtomValue } from "@effect-atom/atom-react"
+import { Result } from "@effect-atom/atom-react"
 import { useNavigate } from "@tanstack/react-router"
 
 import { useEffectiveTimeRange } from "@/hooks/use-effective-time-range"
+import { useRefreshableAtomValue } from "@/hooks/use-refreshable-atom-value"
 import { FilterSection } from "@/components/traces/filter-section"
 import { Route } from "@/routes/services/index"
 import { Separator } from "@maple/ui/components/ui/separator"
@@ -24,7 +25,7 @@ export function ServicesFilterSidebar() {
   const { startTime: effectiveStartTime, endTime: effectiveEndTime } =
     useEffectiveTimeRange(search.startTime, search.endTime)
 
-  const facetsResult = useAtomValue(
+  const facetsResult = useRefreshableAtomValue(
     getServicesFacetsResultAtom({
       data: {
         startTime: effectiveStartTime,
@@ -53,6 +54,7 @@ export function ServicesFilterSidebar() {
       search: {
         startTime: search.startTime,
         endTime: search.endTime,
+        timePreset: search.timePreset,
       },
     })
   }

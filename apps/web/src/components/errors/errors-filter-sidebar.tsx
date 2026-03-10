@@ -1,7 +1,8 @@
-import { Result, useAtomValue } from "@effect-atom/atom-react"
+import { Result } from "@effect-atom/atom-react"
 import { useNavigate } from "@tanstack/react-router"
 
 import { useEffectiveTimeRange } from "@/hooks/use-effective-time-range"
+import { useRefreshableAtomValue } from "@/hooks/use-refreshable-atom-value"
 import { FilterSection, SingleCheckboxFilter } from "@/components/traces/filter-section"
 import { Route } from "@/routes/errors"
 import { Separator } from "@maple/ui/components/ui/separator"
@@ -24,7 +25,7 @@ export function ErrorsFilterSidebar() {
   const { startTime: effectiveStartTime, endTime: effectiveEndTime } =
     useEffectiveTimeRange(search.startTime, search.endTime)
 
-  const facetsResult = useAtomValue(
+  const facetsResult = useRefreshableAtomValue(
     getErrorsFacetsResultAtom({
       data: {
         startTime: effectiveStartTime,
@@ -54,6 +55,7 @@ export function ErrorsFilterSidebar() {
       search: {
         startTime: search.startTime,
         endTime: search.endTime,
+        timePreset: search.timePreset,
       },
     })
   }
