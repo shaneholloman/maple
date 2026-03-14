@@ -12,6 +12,13 @@ export default defineConfig({
   i18n: {
     locales: ['en', 'ja', 'ko'],
     defaultLocale: 'en',
+    fallback: {
+      ja: 'en',
+      ko: 'en',
+    },
+    routing: {
+      fallbackType: 'rewrite',
+    },
   },
   integrations: [
     paraglide({
