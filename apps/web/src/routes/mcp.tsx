@@ -48,6 +48,11 @@ function generateConfig(
   return JSON.stringify(config, null, 2)
 }
 
+function generateCliCommand(apiKey: string) {
+  return `claude mcp add --transport http maple ${mcpEndpoint} \\
+  --header "Authorization: Bearer ${apiKey}"`
+}
+
 const CONFIG_FILE_HINTS: Record<string, string> = {
   "claude-code": "~/.claude/claude_desktop_config.json",
   cursor: ".cursor/mcp.json",
@@ -149,7 +154,32 @@ function McpPage() {
                 <TabsTrigger value="windsurf">Windsurf</TabsTrigger>
                 <TabsTrigger value="other">Other</TabsTrigger>
               </TabsList>
-              {(["claude-code", "cursor", "windsurf", "other"] as const).map(
+              <TabsContent value="claude-code" className="pt-3">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-muted-foreground text-xs">
+                      Run in your terminal
+                    </p>
+                    <CodeBlock
+                      code={generateCliCommand(apiKeyPlaceholder)}
+                      language="bash"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-muted-foreground text-xs">
+                      Or add to{" "}
+                      <code className="bg-muted px-1 py-0.5 rounded text-[11px]">
+                        {CONFIG_FILE_HINTS["claude-code"]}
+                      </code>
+                    </p>
+                    <CodeBlock
+                      code={generateConfig("claude-code", apiKeyPlaceholder)}
+                      language="json"
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+              {(["cursor", "windsurf", "other"] as const).map(
                 (client) => (
                   <TabsContent key={client} value={client} className="pt-3">
                     <div className="space-y-2">
