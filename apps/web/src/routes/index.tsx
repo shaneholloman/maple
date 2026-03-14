@@ -4,7 +4,8 @@ import { Result } from "@effect-atom/atom-react"
 import { Schema } from "effect"
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { TimeRangePicker } from "@/components/time-range-picker"
+import { PageRefreshProvider } from "@/components/time-range-picker/page-refresh-context"
+import { TimeRangeHeaderControls } from "@/components/time-range-picker/time-range-header-controls"
 import {
   Select,
   SelectContent,
@@ -202,38 +203,40 @@ function DashboardPage() {
   ], [environments])
 
   return (
-    <DashboardLayout
-      breadcrumbs={[{ label: "Overview" }]}
-      title="Dashboard"
-      description="Observability overview for your services."
-      headerActions={
-        <div className="flex items-center gap-2">
-          <Select
-            value={selectedEnvironment}
-            onValueChange={handleEnvironmentChange}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {environmentItems.map((item) => (
-                <SelectItem key={item.value} value={item.value}>
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <TimeRangePicker
-            startTime={search.startTime}
-            endTime={search.endTime}
-            presetValue={search.timePreset ?? "24h"}
-            onChange={handleTimeChange}
-          />
-        </div>
-      }
-    >
-      <ServiceUsageCards startTime={effectiveStartTime} endTime={effectiveEndTime} />
-      <MetricsGrid items={metrics} className="mt-4" />
-    </DashboardLayout>
+    <PageRefreshProvider timePreset={search.timePreset ?? "24h"}>
+      <DashboardLayout
+        breadcrumbs={[{ label: "Overview" }]}
+        title="Dashboard"
+        description="Observability overview for your services."
+        headerActions={
+          <div className="flex items-center gap-2">
+            <Select
+              value={selectedEnvironment}
+              onValueChange={handleEnvironmentChange}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {environmentItems.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <TimeRangeHeaderControls
+              startTime={search.startTime ?? effectiveStartTime}
+              endTime={search.endTime ?? effectiveEndTime}
+              presetValue={search.timePreset ?? "24h"}
+              onTimeChange={handleTimeChange}
+            />
+          </div>
+        }
+      >
+        <ServiceUsageCards startTime={effectiveStartTime} endTime={effectiveEndTime} />
+        <MetricsGrid items={metrics} className="mt-4" />
+      </DashboardLayout>
+    </PageRefreshProvider>
   )
 }
