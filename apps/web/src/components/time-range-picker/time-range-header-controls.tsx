@@ -21,7 +21,7 @@ export function TimeRangeHeaderControls({
   presetValue,
   onTimeChange,
 }: TimeRangeHeaderControlsProps) {
-  const { liveEnabled, reload, setLiveEnabled } = usePageRefreshContext()
+  const { liveEnabled, isReloading, reload, setLiveEnabled } = usePageRefreshContext()
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -31,8 +31,8 @@ export function TimeRangeHeaderControls({
         presetValue={presetValue}
         onChange={onTimeChange}
       />
-      <Button type="button" variant="outline" size="sm" onClick={reload}>
-        <ArrowPathIcon className="size-3.5" />
+      <Button type="button" variant="outline" size="sm" onClick={reload} disabled={isReloading}>
+        <ArrowPathIcon className={cn("size-3.5", isReloading && "animate-spin")} />
         <span>Reload</span>
       </Button>
       <label className="flex h-7 items-center gap-2 border border-border bg-background px-2.5 text-xs">

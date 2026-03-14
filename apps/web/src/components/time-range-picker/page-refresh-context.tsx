@@ -13,6 +13,7 @@ export interface RelativeRefreshRange {
 interface PageRefreshContextValue {
   refreshVersion: number
   liveEnabled: boolean
+  isReloading: boolean
   setLiveEnabled: React.Dispatch<React.SetStateAction<boolean>>
   reload: () => void
 }
@@ -48,9 +49,11 @@ export function PageRefreshProvider({
 }: PageRefreshProviderProps) {
   const [refreshVersion, setRefreshVersion] = React.useState(0)
   const [liveEnabled, setLiveEnabled] = React.useState(false)
+  const [isReloading, setIsReloading] = React.useState(false)
   const [isVisible, setIsVisible] = React.useState(() =>
     typeof document === "undefined" ? true : isDocumentVisible(document),
   )
+  const reloadTimeoutRef = React.useRef<ReturnType<typeof setTimeout>>(null)
 
   const triggerReload = React.useEffectEvent(() => {
     const relativeRange = resolveRelativeRefreshRange(timePreset)
@@ -58,7 +61,17 @@ export function PageRefreshProvider({
       onRelativeRangeRefresh?.(relativeRange)
     }
     setRefreshVersion((current) => current + 1)
+
+    if (reloadTimeoutRef.current) clearTimeout(reloadTimeoutRef.current)
+    setIsReloading(true)
+    reloadTimeoutRef.current = setTimeout(() => setIsReloading(false), 600)
   })
+
+  React.useEffect(() => {
+    return () => {
+      if (reloadTimeoutRef.current) clearTimeout(reloadTimeoutRef.current)
+    }
+  }, [])
 
   React.useEffect(() => {
     if (typeof document === "undefined") return
@@ -90,10 +103,11 @@ export function PageRefreshProvider({
     () => ({
       refreshVersion,
       liveEnabled,
+      isReloading,
       setLiveEnabled,
       reload: () => triggerReload(),
     }),
-    [liveEnabled, refreshVersion, triggerReload],
+    [liveEnabled, isReloading, refreshVersion, triggerReload],
   )
 
   return (
