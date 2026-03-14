@@ -2748,6 +2748,7 @@ export const serviceDependencies = defineEndpoint("service_dependencies", {
           FROM service_map_spans
           WHERE OrgId = {{String(org_id, "")}}
             AND ParentSpanId != ''
+            AND SpanKind IN ('Server', 'Consumer')
           {% if defined(start_time) %}
             AND Timestamp >= {{DateTime(start_time, "2023-01-01 00:00:00")}}
           {% end %}

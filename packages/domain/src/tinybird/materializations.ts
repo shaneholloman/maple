@@ -255,6 +255,7 @@ export const serviceMapSpansMv = defineMaterializedView(
           SpanAttributes['peer.service'] AS PeerService,
           ResourceAttributes['deployment.environment'] AS DeploymentEnv
         FROM traces
+        WHERE SpanKind IN ('Client', 'Producer', 'Server', 'Consumer')
       `,
       }),
     ],
