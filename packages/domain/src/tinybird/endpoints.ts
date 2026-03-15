@@ -1688,9 +1688,8 @@ export const errorsByType = defineEndpoint("errors_by_type", {
           uniq(ServiceName) AS affectedServicesCount,
           min(Timestamp) AS firstSeen,
           max(Timestamp) AS lastSeen
-        FROM traces
-        WHERE StatusCode = 'Error'
-          AND OrgId = {{String(org_id, "")}}
+        FROM error_spans
+        WHERE OrgId = {{String(org_id, "")}}
         {% if defined(start_time) %}
           AND Timestamp >= {{DateTime(start_time, "2023-01-01 00:00:00")}}
         {% end %}
@@ -1701,7 +1700,7 @@ export const errorsByType = defineEndpoint("errors_by_type", {
           AND ServiceName IN splitByChar(',', {{String(services, "")}})
         {% end %}
         {% if defined(deployment_envs) %}
-          AND ResourceAttributes['deployment.environment'] IN splitByChar(',', {{String(deployment_envs, "")}})
+          AND DeploymentEnv IN splitByChar(',', {{String(deployment_envs, "")}})
         {% end %}
         {% if defined(error_types) %}
           AND (
@@ -1754,9 +1753,8 @@ export const errorDetailTraces = defineEndpoint("error_detail_traces", {
       name: "error_trace_ids",
       sql: `
         SELECT DISTINCT TraceId
-        FROM traces
-        WHERE StatusCode = 'Error'
-          AND OrgId = {{String(org_id, "")}}
+        FROM error_spans
+        WHERE OrgId = {{String(org_id, "")}}
         AND (
             (StatusMessage = {{String(error_type)}} AND {{String(error_type)}} != 'Unknown Error')
             OR (StatusMessage = '' AND {{String(error_type)}} = 'Unknown Error')
@@ -1853,11 +1851,10 @@ export const errorsFacets = defineEndpoint("errors_facets", {
       sql: `
         SELECT
           ServiceName AS serviceName,
-          ResourceAttributes['deployment.environment'] AS deploymentEnv,
+          DeploymentEnv AS deploymentEnv,
           if(StatusMessage = '', 'Unknown Error', StatusMessage) AS errorType
-        FROM traces
-        WHERE StatusCode = 'Error'
-          AND OrgId = {{String(org_id, "")}}
+        FROM error_spans
+        WHERE OrgId = {{String(org_id, "")}}
         {% if defined(start_time) %}
           AND Timestamp >= {{DateTime(start_time, "2023-01-01 00:00:00")}}
         {% end %}
@@ -1977,9 +1974,8 @@ export const errorsSummary = defineEndpoint("errors_summary", {
           count() AS totalErrors,
           uniq(ServiceName) AS affectedServicesCount,
           uniq(TraceId) AS affectedTracesCount
-        FROM traces
-        WHERE StatusCode = 'Error'
-          AND OrgId = {{String(org_id, "")}}
+        FROM error_spans
+        WHERE OrgId = {{String(org_id, "")}}
         {% if defined(start_time) %}
           AND Timestamp >= {{DateTime(start_time, "2023-01-01 00:00:00")}}
         {% end %}
@@ -1990,7 +1986,7 @@ export const errorsSummary = defineEndpoint("errors_summary", {
           AND ServiceName IN splitByChar(',', {{String(services, "")}})
         {% end %}
         {% if defined(deployment_envs) %}
-          AND ResourceAttributes['deployment.environment'] IN splitByChar(',', {{String(deployment_envs, "")}})
+          AND DeploymentEnv IN splitByChar(',', {{String(deployment_envs, "")}})
         {% end %}
         {% if defined(error_types) %}
           AND (
@@ -2011,20 +2007,17 @@ export const errorsSummary = defineEndpoint("errors_summary", {
     node({
       name: "total_span_count",
       sql: `
-        SELECT count() AS totalSpans
-        FROM traces
+        SELECT sum(TraceCount) AS totalSpans
+        FROM service_usage
         WHERE OrgId = {{String(org_id, "")}}
         {% if defined(start_time) %}
-          AND Timestamp >= {{DateTime(start_time, "2023-01-01 00:00:00")}}
+          AND Hour >= {{DateTime(start_time, "2023-01-01 00:00:00")}}
         {% end %}
         {% if defined(end_time) %}
-          AND Timestamp <= {{DateTime(end_time, "2099-12-31 23:59:59")}}
+          AND Hour <= {{DateTime(end_time, "2099-12-31 23:59:59")}}
         {% end %}
         {% if defined(services) %}
           AND ServiceName IN splitByChar(',', {{String(services, "")}})
-        {% end %}
-        {% if defined(deployment_envs) %}
-          AND ResourceAttributes['deployment.environment'] IN splitByChar(',', {{String(deployment_envs, "")}})
         {% end %}
       `,
     }),

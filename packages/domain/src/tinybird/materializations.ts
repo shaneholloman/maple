@@ -4,6 +4,7 @@ import {
   serviceMapSpans,
   serviceMapChildren,
   serviceOverviewSpans,
+  errorSpans,
   traceListMv,
 } from "./datasources";
 
@@ -336,6 +337,35 @@ export const serviceMapChildrenMv = defineMaterializedView(
     ],
   }
 );
+
+/**
+ * Materialized view populating error_spans from error spans.
+ * Pre-filters to StatusCode='Error' and pre-extracts deployment.environment
+ * so error queries avoid scanning the full traces table and Map columns.
+ */
+export const errorSpansMv = defineMaterializedView("error_spans_mv", {
+  description:
+    "Materializes error spans from traces. Pre-filters to StatusCode='Error' and pre-extracts deployment.environment.",
+  datasource: errorSpans,
+  nodes: [
+    node({
+      name: "error_spans_mv_node",
+      sql: `
+        SELECT
+          OrgId,
+          toDateTime(Timestamp) AS Timestamp,
+          TraceId,
+          SpanId,
+          ServiceName,
+          StatusMessage,
+          Duration,
+          ResourceAttributes['deployment.environment'] AS DeploymentEnv
+        FROM traces
+        WHERE StatusCode = 'Error'
+      `,
+    }),
+  ],
+});
 
 export const traceListMvMv = defineMaterializedView("trace_list_mv_mv", {
   description:

@@ -253,6 +253,36 @@ export const serviceOverviewSpans = defineDatasource("service_overview_spans", {
 export type ServiceOverviewSpansRow = InferRow<typeof serviceOverviewSpans>;
 
 /**
+ * Pre-materialized error spans for the errors page.
+ * Pre-filters to StatusCode='Error' and pre-extracts deployment.environment
+ * so error queries avoid scanning the full traces table and Map columns.
+ * Sorted by (OrgId, ServiceName, Timestamp) for efficient filtering and aggregation.
+ * Populated by materialized view, not direct ingestion.
+ */
+export const errorSpans = defineDatasource("error_spans", {
+  description:
+    "Pre-materialized error spans for the errors page. Pre-filters to StatusCode='Error' and pre-extracts deployment.environment. Populated by materialized view.",
+  jsonPaths: false,
+  schema: {
+    OrgId: t.string().lowCardinality(),
+    Timestamp: t.dateTime(),
+    TraceId: t.string(),
+    SpanId: t.string(),
+    ServiceName: t.string().lowCardinality(),
+    StatusMessage: t.string(),
+    Duration: t.uint64(),
+    DeploymentEnv: t.string().lowCardinality(),
+  },
+  engine: engine.mergeTree({
+    partitionKey: "toDate(Timestamp)",
+    sortingKey: ["OrgId", "ServiceName", "Timestamp"],
+    ttl: "Timestamp + INTERVAL 90 DAY",
+  }),
+});
+
+export type ErrorSpansRow = InferRow<typeof errorSpans>;
+
+/**
  * Pre-materialized root spans for the trace list view.
  * Extracts HTTP attributes and normalizes span names at write time
  * so the trace list query avoids scanning heavy Map columns and GROUP BY.
